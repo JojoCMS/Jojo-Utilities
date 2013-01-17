@@ -3,7 +3,8 @@ header('Content-type: text/plain');
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
-/* Read the config files to get the database name */
+/* Read the config files to get the database name
+TODO: the /var/www/ path should come out of config rather than being hardcoded*/
 $output = `find -L /var/www/* -maxdepth 2 -name config\.php -exec echo {} \; -exec grep DBNAME {} \; -exec grep BASEDIR {} \;`;
 $output = explode("\n", $output);
 $jojodirs = $plugindirs = array();
