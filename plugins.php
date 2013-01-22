@@ -5,19 +5,26 @@ error_reporting(E_ALL);
 
 /* Read the config files to get the database name
 TODO: the /var/www/ path should come out of config rather than being hardcoded*/
-$output = `find -L /var/www/* -maxdepth 2 -name config\.php -exec echo {} \; -exec grep DBNAME {} \; -exec grep BASEDIR {} \;`;
+$output = `find -L /var/www/* -maxdepth 2 -name config\.php -exec echo {} \; -exec grep DBNAME {} \; -exec grep BASEDIR {} \; -exec grep ALTPLUGINDIR {} \;`;
 $output = explode("\n", $output);
-$jojodirs = $plugindirs = array();
+$jojodirs = $plugindirs = $altplugindirs = array();
 $iMax = count($output);
+$altmatch = array();
 for ($i = 0; $i < $iMax - 1;) {
-    if (!strpos($output[$i+1], 'DBNAME') || !preg_match("#define\(\W*'_BASEDIR',\W*'([^']*)'\W*\);#", $output[$i+2], $match)) {
+    if (!strpos($output[$i+1], 'DBNAME') || !preg_match("#define\(\W*'_BASEDIR',\W*'([^']*)'\W*\);#", $output[$i+2], $match) ) {
         $i+= 1;
         continue;
     }
     $dbname = trim(str_replace(array("define('_DBNAME', '", "define( '_DBNAME', '", "');"), '', $output[$i+1]));
     $plugindirs[$dbname] = dirname(realpath($output[$i])) . '_/plugins/';
     $jojodirs[$dbname] = rtrim($match[1], '/') . '/plugins/';
-    $i+=3;
+    preg_match("#define\(\W*'_ALTPLUGINDIR',\W*'([^']*)'\W*\);#", $output[$i+3], $altmatch);
+    $altplugindirs[$dbname] =  $altmatch ? rtrim($altmatch[1], '/') . '/' : '';
+    if ($altplugindirs[$dbname]) {
+        $i+=4;
+    } else {
+        $i+=3;
+    }
 }
 
 $plugins = array();
@@ -39,7 +46,6 @@ while($row = $res->fetch_assoc()) {
         /* Probably not a jojo site */
         continue;
     }
-
     $res2 = $db->query("SELECT trim(`name`) FROM `plugin` WHERE `active` = 'yes'");
     while ($row2 = $res2->fetch_array()) {
         if (!isset($plugindirs[$database])) {
@@ -49,6 +55,11 @@ while($row = $res->fetch_assoc()) {
 
         if (file_exists($jojodirs[$database] . $row2[0])) {
             @$plugins[$row2[0]][] = $database . ' - core plugin - ' . $jojodirs[$database];
+            continue;
+        }
+
+        if (file_exists($altplugindirs[$database] . $row2[0])) {
+            @$plugins[$row2[0]][] = $database . ' - shared plugin - ' . $altplugindirs[$database];
             continue;
         }
 
