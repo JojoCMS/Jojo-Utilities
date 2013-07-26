@@ -53,8 +53,14 @@ while($row = $res->fetch_assoc()) {
             continue;
         }
 
-        if (file_exists($jojodirs[$database] . $row2[0])) {
-            @$plugins[$row2[0]][] = $database . ' - core plugin - ' . $jojodirs[$database];
+        if (file_exists($plugindirs[$database] . $row2[0]) && !is_link($plugindirs[$database] . $row2[0])) {
+            @$plugins[$row2[0]][] = $database . ' - local plugin - ' . $plugindirs[$database];
+            continue;
+        }
+
+        if (file_exists($plugindirs[$database] . $row2[0]) && readlink($plugindirs[$database] . $row2[0])) {
+            $target = readlink($plugindirs[$database] . $row2[0]);
+            @$plugins[$row2[0]][] = $database . ' - symlinked plugin - ' . $target;
             continue;
         }
 
@@ -63,18 +69,16 @@ while($row = $res->fetch_assoc()) {
             continue;
         }
 
+        if (file_exists($jojodirs[$database] . $row2[0])) {
+            @$plugins[$row2[0]][] = $database . ' - core plugin - ' . $jojodirs[$database];
+            continue;
+        }
+
         if (!file_exists($plugindirs[$database] . $row2[0])) {
             @$plugins[$row2[0]][] = $database . ' - *missing plugin*';
             continue;
         }
 
-        if (!is_link($plugindirs[$database] . $row2[0])) {
-            @$plugins[$row2[0]][] = $database . ' - local plugin - ' . $plugindirs[$database];
-            continue;
-        }
-
-        $target = readlink($plugindirs[$database] . $row2[0]);
-        @$plugins[$row2[0]][] = $database . ' - symlinked plugin - ' . $target;
     }
 }
 
