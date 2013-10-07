@@ -117,15 +117,21 @@ while($row = $res->fetch_assoc()) {
         echo "\n\n";
     }
 
-    $res2 = $db->query("SELECT el_desc, count(1) as num, el_code, el_shortdesc FROM `eventlog` WHERE (el_code = 'sql' OR el_code = 'PHP Error') AND el_datetime > FROM_UNIXTIME(UNIX_TIMESTAMP() - 7 * 86400) group by el_desc");
+    $site = $db->query("SELECT op_value FROM `option` WHERE op_name = 'siteurl'");
+    while ($result = $site->fetch_array()) {
+        $siteurl = $result[0] . '/';
+    }
+
+    $res2 = $db->query("SELECT el_desc, count(1) as num, el_code, el_shortdesc, el_uri FROM `eventlog` WHERE (el_code = 'sql' OR el_code = 'PHP Error') AND el_datetime > FROM_UNIXTIME(UNIX_TIMESTAMP() - 7 * 86400) group by el_desc");
     if (!$res2) {
         continue;
     }
     while ($row2 = $res2->fetch_array()) {
         $error = $row2[0];
         if ($row2[2] == 'sql') {
-            $error .= "\n" . $row2[3];
+            $error .= "\n" . $row2[3] . "\n";
         }
+        $error .= "Example URI: " . $siteurl . $row2[4];
         $errors[$error] = isset($errors[$error]) ? $errors[$error] + $row2[1] : $row2[1];
     }
 }
